@@ -48,7 +48,8 @@ service calls:
    - returns the dynamic map
  */
 
-#include <mongo_ros/message_collection.h>
+#include <warehouse_ros/message_collection.h>
+#include <warehouse_ros/database_connection.h>
 #include <ros/ros.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <map_store/ListMaps.h>
@@ -64,9 +65,10 @@ service calls:
 #include <string>
 #include <sstream>
 #include <exception>
-namespace mr=mongo_ros;
+namespace mr=warehouse_ros;
 
-mr::MessageCollection<nav_msgs::OccupancyGrid> *map_collection;
+mr::DatabaseConnection::Ptr conn_;
+mr::MessageCollection<nav_msgs::OccupancyGrid>::Ptr map_collection;
 ros::Publisher map_publisher;
 std::string last_map;
 
@@ -78,7 +80,9 @@ bool listMaps(map_store::ListMaps::Request &request,
   ROS_DEBUG("listMaps() service call");
 
   MapVector all_maps;
-  all_maps = map_collection->pullAllResults( mr::Query(), true, "creation_time", false );
+
+  mr::Query::Ptr q = map_collection->createQuery();
+  all_maps = map_collection->queryList( q, true, "creation_time", false );
 
   // Loop over all_maps to get the first of each session.
   for(MapVector::const_iterator map_iter = all_maps.begin(); map_iter != all_maps.end(); map_iter++)
@@ -86,7 +90,7 @@ bool listMaps(map_store::ListMaps::Request &request,
     ROS_DEBUG("listMaps() reading a map");
 
     ROS_DEBUG("listMaps() adding a map to the result list.");
-    ROS_DEBUG("listMaps() metadata is: '%s'", (*map_iter)->metadata.toString().c_str());
+    // ROS_DEBUG("listMaps() metadata is: '%s'", (*map_iter)->metadata_.toString().c_str());
     
     // Add the map info to our result list.
     map_store::MapListEntry new_entry;
@@ -106,7 +110,9 @@ bool lookupMap(std::string name, nav_msgs::OccupancyGridConstPtr &ptr) {
   MapVector matching_maps;
   try
   {
-    matching_maps = map_collection->pullAllResults(mr::Query("uuid", name), false );
+    mr::Query::Ptr q = map_collection->createQuery();
+    q->append("uuid", name);
+    matching_maps = map_collection->queryList(q, false );
   } catch(const std::exception &e) {
     ROS_ERROR("Error during query: %s", e.what());
     return false;
@@ -174,13 +180,22 @@ bool deleteMap(map_store::DeleteMap::Request &request,
   {
     last_map = "";
   }
-  return map_collection->removeMessages(mr::Query("uuid", request.map_id)) == 1;
+  
+  mr::Query::Ptr q = map_collection->createQuery();
+  q->append("uuid", request.map_id);
+  return map_collection->removeMessages(q) == 1;
 }
 
 bool renameMap(map_store::RenameMap::Request &request,
                map_store::RenameMap::Response &response)
 {
-  map_collection->modifyMetadata(mr::Query("uuid", request.map_id), mr::Metadata("name", request.new_name));
+  mr::Query::Ptr q = map_collection->createQuery();
+  q->append("uuid", request.map_id);
+
+  mr::Metadata::Ptr metadata = map_collection->createMetadata();
+  metadata->append("name", request.new_name);
+
+  map_collection->modifyMetadata(q, metadata);
   return true;
 }
 
@@ -234,7 +249,9 @@ bool setOrigin(map_store::SetOrigin::Request &request,
   // Retrieve and copy metadata from the old map:
   MapVector all_maps;
   map_store::MapListEntry new_offset_entry;
-  all_maps = map_collection->pullAllResults( mr::Query(), true, "creation_time", false );
+
+  mr::Query::Ptr q = map_collection->createQuery();
+  all_maps = map_collection->queryList( q, true, "creation_time", false );
   bool wasMapFound = false;
 
   for(MapVector::const_iterator map_iter = all_maps.begin(); map_iter != all_maps.end() && !wasMapFound; map_iter++)
@@ -255,15 +272,19 @@ bool setOrigin(map_store::SetOrigin::Request &request,
   }
 
   // Delete old map with old origin:
-  if (map_collection->removeMessages(mr::Query("uuid", request.map_id)) != 1) {
+  mr::Query::Ptr q2 = map_collection->createQuery();
+  q2->append("uuid", request.map_id);
+  if (map_collection->removeMessages(q2) != 1) {
     ROS_ERROR("FAILED: Could not remove previous origin settings");
     return false;
   }
 
   // Add new map with updated origin (maintain the same metadata from the previous map):
-  mr::Metadata metadata = mr::Metadata("uuid", new_offset_entry.map_id,
-                                       "session_id", new_offset_entry.session_id,
-                                       "name", new_offset_entry.name);
+  mr::Metadata::Ptr metadata = map_collection->createMetadata();
+  metadata->append("uuid", new_offset_entry.map_id);
+  metadata->append("session_id", new_offset_entry.session_id);
+  metadata->append("name", new_offset_entry.name);
+
   map_collection->insert(offsetMap, metadata);
 
   return true;
@@ -274,8 +295,8 @@ int main (int argc, char** argv)
   ros::init(argc, argv, "map_manager");
   ros::NodeHandle nh;
 
-  map_collection = new mr::MessageCollection<nav_msgs::OccupancyGrid>("map_store", "maps");
-  map_collection->ensureIndex("uuid");
+  map_collection = conn_->openCollectionPtr<nav_msgs::OccupancyGrid>("map_store", "maps");
+  // map_collection->ensureIndex("uuid");
 
   if (!nh.getParam("last_map_id", last_map))
   {
@@ -312,7 +333,7 @@ int main (int argc, char** argv)
 
   ros::spin();
 
-  delete map_collection;
+  // delete map_collection;
 
   return 0;
 }

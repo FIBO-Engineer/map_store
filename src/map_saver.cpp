@@ -37,7 +37,8 @@ service calls:
    - save the map returned by dynamic_map as map name
  */
 
-#include <mongo_ros/message_collection.h>
+#include <warehouse_ros/message_collection.h>
+#include <warehouse_ros/database_connection.h>
 #include <ros/ros.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/GetMap.h>
@@ -48,10 +49,11 @@ service calls:
 
 #include <uuid/uuid.h>
 
-namespace mr=mongo_ros;
+namespace mr=warehouse_ros;
 
 std::string session_id;
-mr::MessageCollection<nav_msgs::OccupancyGrid> *map_collection;
+mr::MessageCollection<nav_msgs::OccupancyGrid>::Ptr map_collection;
+mr::DatabaseConnection::Ptr conn_;
 ros::ServiceClient add_metadata_service_client;
 ros::ServiceClient dynamic_map_service_client;
 
@@ -67,9 +69,10 @@ void onMapReceived(const nav_msgs::OccupancyGrid::ConstPtr& map_msg)
 {
   ROS_DEBUG("received map");
   std::string uuid_string = uuidGenerate();
-  mr::Metadata metadata
-    = mr::Metadata("uuid", uuid_string,
-		   "session_id", session_id);
+
+  mr::Metadata::Ptr metadata = map_collection->createMetadata();
+  metadata->append("uuid", uuid_string);
+  metadata->append("session_id", session_id);
 
   map_collection->insert(*map_msg, metadata);
 
@@ -86,10 +89,11 @@ bool saveMap(map_store::SaveMap::Request &req,
   }
   
   std::string uuid_string = uuidGenerate();
-  mr::Metadata metadata
-    = mr::Metadata("uuid", uuid_string,
-                   "session_id", session_id,
-		   "name", req.map_name);
+  
+  mr::Metadata::Ptr metadata = map_collection->createMetadata();
+  metadata->append("uuid", uuid_string);
+  metadata->append("session_id", session_id);
+  metadata->append("name", req.map_name);
 
   ROS_DEBUG("Save map %d by %d @ %f as %s", srv.response.map.info.width, 
             srv.response.map.info.height, srv.response.map.info.resolution, req.map_name.c_str());
@@ -109,7 +113,7 @@ int main (int argc, char** argv)
   snprintf(buff, 256, "%f", ros::Time::now().toSec());
   session_id = std::string(buff);
 
-  map_collection = new mr::MessageCollection<nav_msgs::OccupancyGrid>("map_store", "maps");
+  map_collection = conn_->openCollectionPtr<nav_msgs::OccupancyGrid>("map_store", "maps");
 
   ros::Subscriber map_subscriber = nh.subscribe("map", 1, onMapReceived);
   ros::ServiceServer name_latest_map_service = nh.advertiseService("save_map", saveMap);

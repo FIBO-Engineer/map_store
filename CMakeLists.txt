@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rostest
   warehouse_ros
+  warehouse_ros_mongo
   std_msgs
 )
 
