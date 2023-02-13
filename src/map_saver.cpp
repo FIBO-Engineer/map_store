@@ -49,15 +49,17 @@ service calls:
 
 #include <uuid/uuid.h>
 
-namespace mr=warehouse_ros;
+namespace wr = warehouse_ros;
 
 std::string session_id;
-mr::MessageCollection<nav_msgs::OccupancyGrid>::Ptr map_collection;
-mr::DatabaseConnection::Ptr conn_;
-ros::ServiceClient add_metadata_service_client;
-ros::ServiceClient dynamic_map_service_client;
+wr::MessageCollection<nav_msgs::OccupancyGrid>::Ptr map_collection;
+wr::DatabaseConnection::Ptr conn_;
+// ros::ServiceClient add_metadata_service_client;
+// ros::ServiceClient dynamic_map_service_client;
+nav_msgs::OccupancyGrid::ConstPtr latched_map_msg;
 
-std::string uuidGenerate() {
+std::string uuidGenerate()
+{
   uuid_t uuid;
   uuid_generate(uuid);
   char uuid_string[37]; // UUID prints into 36 bytes + NULL terminator
@@ -65,51 +67,53 @@ std::string uuidGenerate() {
   return std::string(uuid_string);
 }
 
-void onMapReceived(const nav_msgs::OccupancyGrid::ConstPtr& map_msg)
+void onMapReceived(const nav_msgs::OccupancyGrid::ConstPtr &map_msg)
 {
-  ROS_DEBUG("received map");
-  std::string uuid_string = uuidGenerate();
+  // ROS_DEBUG("received map");
+  // std::string uuid_string = uuidGenerate();
 
-  mr::Metadata::Ptr metadata = map_collection->createMetadata();
-  metadata->append("uuid", uuid_string);
-  metadata->append("session_id", session_id);
+  // wr::Metadata::Ptr metadata = map_collection->createMetadata();
+  // metadata->append("uuid", uuid_string);
+  // metadata->append("session_id", session_id);
 
-  map_collection->insert(*map_msg, metadata);
+  // map_collection->insert(*map_msg, metadata);
 
-  ROS_DEBUG("saved map");
+  // ROS_DEBUG("saved map");
+  latched_map_msg = map_msg;
 }
 
 bool saveMap(map_store::SaveMap::Request &req,
              map_store::SaveMap::Response &res)
 {
-  nav_msgs::GetMap srv;
-  if (!dynamic_map_service_client.call(srv)) {
-    ROS_ERROR("Dynamic map getter service call failed");
-    return false;
-  }
-  
+  // nav_msgs::GetMap srv;
+  // if (!dynamic_map_service_client.call(srv))
+  // {
+  //   ROS_ERROR("Dynamic map getter service call failed");
+  //   return false;
+  // }
+
   std::string uuid_string = uuidGenerate();
-  
-  mr::Metadata::Ptr metadata = map_collection->createMetadata();
+
+  wr::Metadata::Ptr metadata = map_collection->createMetadata();
   metadata->append("uuid", uuid_string);
   metadata->append("session_id", session_id);
   metadata->append("name", req.map_name);
 
-  ROS_DEBUG("Save map %d by %d @ %f as %s", srv.response.map.info.width, 
-            srv.response.map.info.height, srv.response.map.info.resolution, req.map_name.c_str());
-  map_collection->insert(srv.response.map, metadata);
-  
+  ROS_INFO("Save map %d by %d @ %f as %s", latched_map_msg->info.width,
+           latched_map_msg->info.height, latched_map_msg->info.resolution, req.map_name.c_str());
+  map_collection->insert(*latched_map_msg, metadata);
+
   ROS_DEBUG("nameLastestMaps() service call done");
   return true;
 }
 
-int main (int argc, char** argv)
+int main(int argc, char **argv)
 {
   ros::init(argc, argv, "map_saver");
   ros::NodeHandle nh;
 
   // Use the current ROS time in seconds as the session id.
-  char buff[256]; 
+  char buff[256];
   snprintf(buff, 256, "%f", ros::Time::now().toSec());
   session_id = std::string(buff);
 
@@ -118,7 +122,7 @@ int main (int argc, char** argv)
   ros::Subscriber map_subscriber = nh.subscribe("map", 1, onMapReceived);
   ros::ServiceServer name_latest_map_service = nh.advertiseService("save_map", saveMap);
 
-  dynamic_map_service_client = nh.serviceClient<nav_msgs::GetMap>("dynamic_map");
+  // dynamic_map_service_client = nh.serviceClient<nav_msgs::GetMap>("dynamic_map");
 
   ROS_DEBUG("spinning.");
 
