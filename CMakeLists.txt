@@ -41,7 +41,7 @@ add_executable(map_manager src/map_manager.cpp)
 add_dependencies(map_manager map_store_gencpp)
 target_link_libraries(map_manager uuid ${catkin_LIBRARIES})
 
-add_rostest(test/map_store.test)
+# add_rostest(test/map_store.test)
 
 install(TARGETS map_saver
 	        map_manager

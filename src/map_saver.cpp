@@ -38,7 +38,7 @@ service calls:
  */
 
 #include <warehouse_ros/message_collection.h>
-#include <warehouse_ros/database_connection.h>
+#include <warehouse_ros_mongo/database_connection.h>
 #include <ros/ros.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/GetMap.h>
@@ -53,7 +53,7 @@ namespace wr = warehouse_ros;
 
 std::string session_id;
 wr::MessageCollection<nav_msgs::OccupancyGrid>::Ptr map_collection;
-wr::DatabaseConnection::Ptr conn_;
+// wr::DatabaseConnection::Ptr conn_;
 // ros::ServiceClient add_metadata_service_client;
 // ros::ServiceClient dynamic_map_service_client;
 nav_msgs::OccupancyGrid::ConstPtr latched_map_msg;
@@ -116,8 +116,19 @@ int main(int argc, char **argv)
   char buff[256];
   snprintf(buff, 256, "%f", ros::Time::now().toSec());
   session_id = std::string(buff);
+  warehouse_ros_mongo::MongoDatabaseConnection conn_;
 
-  map_collection = conn_->openCollectionPtr<nav_msgs::OccupancyGrid>("map_store", "maps");
+  std::string host;
+  int port;
+  nh.param<std::string>("warehouse_host", host, "localhost");
+  nh.param<int>("warehouse_port", port, 27017);
+  conn_.setParams(host, port, 60.0);
+  ROS_INFO("[map_saver] Connecting to warehouse_ros_mongo...");
+  conn_.connect();
+  ROS_INFO("[map_saver] Connected");
+  ROS_INFO("[map_saver] Opening collection...");
+  map_collection = conn_.openCollectionPtr<nav_msgs::OccupancyGrid>("map_store", "maps");
+  ROS_INFO("[map_saver] Opened map_store collection");
 
   ros::Subscriber map_subscriber = nh.subscribe("map", 1, onMapReceived);
   ros::ServiceServer name_latest_map_service = nh.advertiseService("save_map", saveMap);
