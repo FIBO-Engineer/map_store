@@ -1,8 +1,8 @@
 <package>
   <name>map_store</name>
-  <version>0.3.1</version>
+  <version>0.4.0</version>
   <description>
-    Storage manager for OccupancyGrid maps.  Supports naming the most
+    Storage manager for OccupancyGrid maps. Supports naming the most
     recent map, getting a list of map names, and publishing a
     specific map.
   </description>
@@ -31,4 +31,3 @@
   <run_depend>warehouse_ros_mongo</run_depend>
   <run_depend>std_msgs</run_depend>
 </package>
-
