@@ -312,9 +312,10 @@ int main(int argc, char **argv)
   conn_.setParams(host, port, 60.0);
   ROS_INFO("[map_manager] Connecting to warehouse_ros_mongo...");
   conn_.connect();
-  ROS_INFO("[map_manager] Connected");
+  ROS_INFO("[map_manager] Connected.");
   ROS_INFO("[map_manager] Opening collection...");
   map_collection = conn_.openCollectionPtr<nav_msgs::OccupancyGrid>("map_store", "maps");
+  ROS_INFO("[map_manager] map_store collection opened.");
 
   // map_collection->ensureIndex("uuid");
 

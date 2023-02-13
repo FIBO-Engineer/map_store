@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <param name="warehouse_host" value="localhost" />
+    <param name="warehouse_port" value="27017" />
+
+    <node pkg="map_store" type="map_manager" name="map_manager" output="screen" />
+</launch>

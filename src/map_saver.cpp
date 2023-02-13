@@ -125,10 +125,10 @@ int main(int argc, char **argv)
   conn_.setParams(host, port, 60.0);
   ROS_INFO("[map_saver] Connecting to warehouse_ros_mongo...");
   conn_.connect();
-  ROS_INFO("[map_saver] Connected");
+  ROS_INFO("[map_saver] Connected.");
   ROS_INFO("[map_saver] Opening collection...");
   map_collection = conn_.openCollectionPtr<nav_msgs::OccupancyGrid>("map_store", "maps");
-  ROS_INFO("[map_saver] Opened map_store collection");
+  ROS_INFO("[map_saver] map_store collection opened.");
 
   ros::Subscriber map_subscriber = nh.subscribe("map", 1, onMapReceived);
   ros::ServiceServer name_latest_map_service = nh.advertiseService("save_map", saveMap);

@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <launch>
   <!-- Location of the map you want to store -->
   <arg name="map_address" value="$(find map_store)/maps/sample.yaml" />
