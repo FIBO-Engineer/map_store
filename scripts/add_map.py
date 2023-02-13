@@ -13,18 +13,18 @@ except:
     print("You must specify a name for the map on the server")
     sys.exit(1)
 
-# print("Waiting for /dynamic_map...")
-# rospy.wait_for_service('/dynamic_map')
-print("Waiting for /save_map...")
-rospy.wait_for_service('/save_map')
-print("Waiting for /list_maps...")
-rospy.wait_for_service('/list_maps')
-print("Waiting for /delete_map...")
-rospy.wait_for_service('/delete_map')
+# print("Waiting for /map_manager/dynamic_map...")
+# rospy.wait_for_service('/map_manager/dynamic_map')
+print("Waiting for /map_manager/save_map...")
+rospy.wait_for_service('/map_manager/save_map')
+print("Waiting for /map_manager/list_maps...")
+rospy.wait_for_service('/map_manager/list_maps')
+print("Waiting for /map_manager/delete_map...")
+rospy.wait_for_service('/map_manager/delete_map')
 
 print("Checking for duplicates...")
-list_last_maps = rospy.ServiceProxy('/list_maps', map_store.srv.ListMaps)
-delete_map = rospy.ServiceProxy('/delete_map', map_store.srv.DeleteMap)
+list_last_maps = rospy.ServiceProxy('/map_manager/list_maps', map_store.srv.ListMaps)
+delete_map = rospy.ServiceProxy('/map_manager/delete_map', map_store.srv.DeleteMap)
 maps = []
 try:
     maps = list_last_maps().map_list
@@ -38,7 +38,7 @@ for i in maps:
         delete_map(i.map_id)
 
 print("Starting service...")
-save_map = rospy.ServiceProxy('/save_map', map_store.srv.SaveMap)
+save_map = rospy.ServiceProxy('/map_manager/save_map', map_store.srv.SaveMap)
 print("Saving map as", map_name)
 save_map(map_name)
 print("Done")

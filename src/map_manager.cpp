@@ -71,6 +71,7 @@ mr::DatabaseConnection::Ptr conn_;
 mr::MessageCollection<nav_msgs::OccupancyGrid>::Ptr map_collection;
 ros::Publisher map_publisher;
 std::string last_map;
+std::shared_ptr<ros::NodeHandle> nh_;
 
 typedef std::vector<mr::MessageWithMetadata<nav_msgs::OccupancyGrid>::ConstPtr> MapVector;
 
@@ -137,15 +138,14 @@ bool publishMap(map_store::PublishMap::Request &request,
   ROS_DEBUG("Searching for '%s'", request.map_id.c_str());
 
   last_map = request.map_id;
-  ros::NodeHandle nh;
 
   std::string frame_id;
-  if (!nh.param<std::string>("map_frame_id", frame_id, "/map"))
+  if (!nh_->param<std::string>("map_frame_id", frame_id, "/map"))
   {
     ROS_WARN("Parameter 'map_frame_id' not set. Using default frame ID: '/map'");
   }
 
-  nh.setParam("last_map_id", last_map);
+  nh_->setParam("last_map_id", last_map);
   nav_msgs::OccupancyGridConstPtr map;
   if (lookupMap(request.map_id, map))
   {
@@ -172,13 +172,12 @@ bool publishMap(map_store::PublishMap::Request &request,
 bool deleteMap(map_store::DeleteMap::Request &request,
                map_store::DeleteMap::Response &response)
 {
-  ros::NodeHandle nh;
   std::string param;
-  if (nh.getParam("last_map_id", param))
+  if (nh_->getParam("last_map_id", param))
   {
     if (param == request.map_id)
     {
-      nh.deleteParam("last_map_id");
+      nh_->deleteParam("last_map_id");
     }
   }
   if (last_map == request.map_id)
@@ -302,13 +301,13 @@ bool setOrigin(map_store::SetOrigin::Request &request,
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "map_manager");
-  ros::NodeHandle nh;
+  nh_ = std::make_shared<ros::NodeHandle>("~");
 
   warehouse_ros_mongo::MongoDatabaseConnection conn_;
   std::string host;
   int port;
-  nh.param<std::string>("warehouse_host", host, "localhost");
-  nh.param<int>("warehouse_port", port, 27017);
+  nh_->param<std::string>("warehouse_host", host, "localhost");
+  nh_->param<int>("warehouse_port", port, 27017);
   conn_.setParams(host, port, 60.0);
   ROS_INFO("[map_manager] Connecting to warehouse_ros_mongo...");
   conn_.connect();
@@ -319,12 +318,13 @@ int main(int argc, char **argv)
 
   // map_collection->ensureIndex("uuid");
 
-  if (!nh.getParam("last_map_id", last_map))
+  if (!nh_->getParam("last_map_id", last_map))
   {
+    ROS_WARN("last_map_id was not set");
     last_map = "";
   }
 
-  map_publisher = nh.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
+  map_publisher = nh_->advertise<nav_msgs::OccupancyGrid>("map", 1, true);
   if (last_map != "")
   {
     nav_msgs::OccupancyGridConstPtr map;
@@ -345,12 +345,12 @@ int main(int argc, char **argv)
     }
   }
 
-  ros::ServiceServer list_maps_service = nh.advertiseService("list_maps", listMaps);
-  ros::ServiceServer publish_map_service = nh.advertiseService("publish_map", publishMap);
-  ros::ServiceServer delete_map_service = nh.advertiseService("delete_map", deleteMap);
-  ros::ServiceServer rename_map_service = nh.advertiseService("rename_map", renameMap);
-  ros::ServiceServer get_map = nh.advertiseService("get_map", getMap);
-  ros::ServiceServer set_map_origin = nh.advertiseService("set_origin", setOrigin);
+  ros::ServiceServer list_maps_service = nh_->advertiseService("list_maps", listMaps);
+  ros::ServiceServer publish_map_service = nh_->advertiseService("publish_map", publishMap);
+  ros::ServiceServer delete_map_service = nh_->advertiseService("delete_map", deleteMap);
+  ros::ServiceServer rename_map_service = nh_->advertiseService("rename_map", renameMap);
+  ros::ServiceServer get_map = nh_->advertiseService("get_map", getMap);
+  ros::ServiceServer set_map_origin = nh_->advertiseService("set_origin", setOrigin);
 
   ROS_DEBUG("spinning.");
 
