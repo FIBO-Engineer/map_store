@@ -15,8 +15,8 @@ except:
 
 # print("Waiting for /map_manager/dynamic_map...")
 # rospy.wait_for_service('/map_manager/dynamic_map')
-print("Waiting for /map_manager/save_map...")
-rospy.wait_for_service('/map_manager/save_map')
+print("Waiting for /map_saver/save_map...")
+rospy.wait_for_service('/map_saver/save_map')
 print("Waiting for /map_manager/list_maps...")
 rospy.wait_for_service('/map_manager/list_maps')
 print("Waiting for /map_manager/delete_map...")
@@ -38,7 +38,7 @@ for i in maps:
         delete_map(i.map_id)
 
 print("Starting service...")
-save_map = rospy.ServiceProxy('/map_manager/save_map', map_store.srv.SaveMap)
+save_map = rospy.ServiceProxy('/map_saver/save_map', map_store.srv.SaveMap)
 print("Saving map as", map_name)
 save_map(map_name)
 print("Done")

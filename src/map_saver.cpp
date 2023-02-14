@@ -110,7 +110,7 @@ bool saveMap(map_store::SaveMap::Request &req,
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "map_saver");
-  ros::NodeHandle nh;
+  std::shared_ptr<ros::NodeHandle> nh = std::make_shared<ros::NodeHandle>("~");
 
   // Use the current ROS time in seconds as the session id.
   char buff[256];
@@ -120,8 +120,8 @@ int main(int argc, char **argv)
 
   std::string host;
   int port;
-  nh.param<std::string>("warehouse_host", host, "localhost");
-  nh.param<int>("warehouse_port", port, 27017);
+  nh->param<std::string>("warehouse_host", host, "localhost");
+  nh->param<int>("warehouse_port", port, 27017);
   conn_.setParams(host, port, 60.0);
   ROS_INFO("[map_saver] Connecting to warehouse_ros_mongo...");
   conn_.connect();
@@ -130,10 +130,10 @@ int main(int argc, char **argv)
   map_collection = conn_.openCollectionPtr<nav_msgs::OccupancyGrid>("map_store", "maps");
   ROS_INFO("[map_saver] map_store collection opened.");
 
-  ros::Subscriber map_subscriber = nh.subscribe("map", 1, onMapReceived);
-  ros::ServiceServer map_saver_service = nh.advertiseService("save_map", saveMap);
+  ros::Subscriber map_subscriber = nh->subscribe("map", 1, onMapReceived);
+  ros::ServiceServer map_saver_service = nh->advertiseService("save_map", saveMap);
 
-  // dynamic_map_service_client = nh.serviceClient<nav_msgs::GetMap>("dynamic_map");
+  // dynamic_map_service_client = nh->serviceClient<nav_msgs::GetMap>("dynamic_map");
 
   ROS_DEBUG("spinning.");
 

@@ -1,16 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-  <!-- Location of the map you want to store -->
-  <arg name="map_address" value="$(find map_store)/maps/sample.yaml" />
-  <!-- Name of map you want to put into the database -->
-  <arg name="map_name" value="sample" />
+  <arg name="map_name" default="sample" />
+  <arg name="maps_location" default="$(find map_store)/maps/" />
+
+  <arg name="map_path" value="$(eval arg('maps_location') + arg('map_name') + '.yaml')" />
 
   <param name="warehouse_host" value="localhost" />
   <param name="warehouse_port" value="27017" />
 
+  <!-- Save to database -->
   <node pkg="map_store" type="map_saver" name="map_saver" />
+  <!-- For checking duplicates and delete -->
   <node pkg="map_store" type="map_manager" name="map_manager" output="screen" />
-  <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_address)" />
+  <!-- For publishing local map file-->
+  <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_path)" />
+  <!-- State machine -->
   <node pkg="map_store" type="add_map.py" name="add_map" args="'$(arg map_name)'" required="true"
     output="screen" />
 
