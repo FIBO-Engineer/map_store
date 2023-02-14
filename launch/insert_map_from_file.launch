@@ -15,7 +15,7 @@
   <!-- For publishing local map file-->
   <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_path)" />
   <!-- State machine -->
-  <node pkg="map_store" type="add_map.py" name="add_map" args="'$(arg map_name)'" required="true"
-    output="screen" />
+  <node pkg="map_store" type="insert_map_from_file.py" name="add_map" args="'$(arg map_name)'"
+    required="true" output="screen" />
 
 </launch>
