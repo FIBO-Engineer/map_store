@@ -103,7 +103,7 @@ bool saveMap(map_store::SaveMap::Request &req,
            latched_map_msg->info.height, latched_map_msg->info.resolution, req.map_name.c_str());
   map_collection->insert(*latched_map_msg, metadata);
 
-  ROS_DEBUG("nameLastestMaps() service call done");
+  // ROS_DEBUG("nameLastestMaps() service call done");
   return true;
 }
 
@@ -131,7 +131,7 @@ int main(int argc, char **argv)
   ROS_INFO("[map_saver] map_store collection opened.");
 
   ros::Subscriber map_subscriber = nh.subscribe("map", 1, onMapReceived);
-  ros::ServiceServer name_latest_map_service = nh.advertiseService("save_map", saveMap);
+  ros::ServiceServer map_saver_service = nh.advertiseService("save_map", saveMap);
 
   // dynamic_map_service_client = nh.serviceClient<nav_msgs::GetMap>("dynamic_map");
 

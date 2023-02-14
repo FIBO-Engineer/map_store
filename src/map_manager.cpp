@@ -69,7 +69,7 @@ namespace mr = warehouse_ros;
 
 mr::DatabaseConnection::Ptr conn_;
 mr::MessageCollection<nav_msgs::OccupancyGrid>::Ptr map_collection;
-ros::Publisher map_publisher;
+ros::Publisher map_publisher, map_list_entry_publisher;
 std::string last_map;
 std::shared_ptr<ros::NodeHandle> nh_;
 
@@ -107,13 +107,13 @@ bool listMaps(map_store::ListMaps::Request &request,
   return true;
 }
 
-bool lookupMap(std::string name, nav_msgs::OccupancyGridConstPtr &ptr)
+bool lookupMap(std::string name, nav_msgs::OccupancyGridConstPtr &ptr, map_store::MapListEntry &map_list_entry)
 {
   MapVector matching_maps;
   try
   {
     mr::Query::Ptr q = map_collection->createQuery();
-    q->append("uuid", name);
+    q->append("name", name);
     matching_maps = map_collection->queryList(q, false);
   }
   catch (const std::exception &e)
@@ -127,6 +127,10 @@ bool lookupMap(std::string name, nav_msgs::OccupancyGridConstPtr &ptr)
     ROS_ERROR("publishMap() found %d matching maps instead of 1.  Failing.", (int)matching_maps.size());
     return false;
   }
+  map_list_entry.name = matching_maps[0]->lookupString("name");
+  map_list_entry.date = (int64_t)matching_maps[0]->lookupDouble("creation_time");
+  map_list_entry.session_id = matching_maps[0]->lookupString("session_id");
+  map_list_entry.map_id = matching_maps[0]->lookupString("uuid");
   ptr = nav_msgs::OccupancyGridConstPtr(matching_maps[0]);
   return true;
 }
@@ -135,9 +139,9 @@ bool publishMap(map_store::PublishMap::Request &request,
                 map_store::PublishMap::Response &response)
 {
   ROS_DEBUG("publishMap() service call");
-  ROS_DEBUG("Searching for '%s'", request.map_id.c_str());
+  ROS_DEBUG("Searching for '%s'", request.name.c_str());
 
-  last_map = request.map_id;
+  last_map = request.name;
 
   std::string frame_id;
   if (!nh_->param<std::string>("map_frame_id", frame_id, "/map"))
@@ -145,16 +149,17 @@ bool publishMap(map_store::PublishMap::Request &request,
     ROS_WARN("Parameter 'map_frame_id' not set. Using default frame ID: '/map'");
   }
 
-  nh_->setParam("last_map_id", last_map);
+  nh_->setParam("last_map_name", last_map);
   nav_msgs::OccupancyGridConstPtr map;
-  if (lookupMap(request.map_id, map))
+  map_store::MapListEntry map_list_entry;
+  if (lookupMap(request.name, map, map_list_entry))
   {
     try
     {
       nav_msgs::OccupancyGrid prefixedMap = *map;
       prefixedMap.header.frame_id = frame_id;
-
       map_publisher.publish(prefixedMap);
+      map_list_entry_publisher.publish(map_list_entry);
     }
     catch (...)
     {
@@ -173,20 +178,23 @@ bool deleteMap(map_store::DeleteMap::Request &request,
                map_store::DeleteMap::Response &response)
 {
   std::string param;
-  if (nh_->getParam("last_map_id", param))
+  // Delete parameter
+  if (nh_->getParam("last_map_name", param))
   {
-    if (param == request.map_id)
+    if (param == request.name)
     {
-      nh_->deleteParam("last_map_id");
+      nh_->deleteParam("last_map_name");
     }
   }
-  if (last_map == request.map_id)
+
+  // Clear variable
+  if (last_map == request.name)
   {
     last_map = "";
   }
 
   mr::Query::Ptr q = map_collection->createQuery();
-  q->append("uuid", request.map_id);
+  q->append("name", request.name);
   return map_collection->removeMessages(q) == 1;
 }
 
@@ -194,7 +202,7 @@ bool renameMap(map_store::RenameMap::Request &request,
                map_store::RenameMap::Response &response)
 {
   mr::Query::Ptr q = map_collection->createQuery();
-  q->append("uuid", request.map_id);
+  q->append("name", request.old_name);
 
   mr::Metadata::Ptr metadata = map_collection->createMetadata();
   metadata->append("name", request.new_name);
@@ -211,7 +219,8 @@ bool getMap(nav_msgs::GetMap::Request &request,
     return false;
   }
   nav_msgs::OccupancyGridConstPtr map;
-  if (lookupMap(last_map, map))
+  map_store::MapListEntry dummy_mle;
+  if (lookupMap(last_map, map, dummy_mle))
   {
     response.map = *map;
   }
@@ -227,13 +236,14 @@ bool setOrigin(map_store::SetOrigin::Request &request,
 {
   // TODO: this is a long-winded method to set the origin of the map. Fix it later.
 
-  ROS_DEBUG("Searching for '%s'", request.map_id.c_str());
+  ROS_DEBUG("Searching for '%s'", request.name.c_str());
 
   nav_msgs::OccupancyGridConstPtr map;
+  map_store::MapListEntry dummy_mle;
   nav_msgs::OccupancyGrid offsetMap;
 
   // Create new map with specified offset:
-  if (lookupMap(request.map_id, map))
+  if (lookupMap(request.name, map, dummy_mle))
   {
     offsetMap = *map;
 
@@ -261,7 +271,7 @@ bool setOrigin(map_store::SetOrigin::Request &request,
 
   for (MapVector::const_iterator map_iter = all_maps.begin(); map_iter != all_maps.end() && !wasMapFound; map_iter++)
   {
-    if ((*map_iter)->lookupString("uuid").compare(request.map_id) == 0)
+    if ((*map_iter)->lookupString("name").compare(request.name) == 0)
     {
       new_offset_entry.name = (*map_iter)->lookupString("name");
       new_offset_entry.date = (int64_t)(*map_iter)->lookupDouble("creation_time");
@@ -280,7 +290,7 @@ bool setOrigin(map_store::SetOrigin::Request &request,
 
   // Delete old map with old origin:
   mr::Query::Ptr q2 = map_collection->createQuery();
-  q2->append("uuid", request.map_id);
+  q2->append("name", request.name);
   if (map_collection->removeMessages(q2) != 1)
   {
     ROS_ERROR("FAILED: Could not remove previous origin settings");
@@ -318,21 +328,24 @@ int main(int argc, char **argv)
 
   // map_collection->ensureIndex("uuid");
 
-  if (!nh_->getParam("last_map_id", last_map))
+  if (!nh_->getParam("last_map_name", last_map) || last_map == "")
   {
-    ROS_WARN("last_map_id was not set");
+    ROS_WARN("last_map_name was not set, no map is publishing.");
     last_map = "";
   }
 
   map_publisher = nh_->advertise<nav_msgs::OccupancyGrid>("map", 1, true);
+  map_list_entry_publisher = nh_->advertise<map_store::MapListEntry>("map_list_entry", 1, true);
   if (last_map != "")
   {
     nav_msgs::OccupancyGridConstPtr map;
-    if (lookupMap(last_map, map))
+    map_store::MapListEntry map_list_entry;
+    if (lookupMap(last_map, map, map_list_entry))
     {
       try
       {
         map_publisher.publish(map);
+        map_list_entry_publisher.publish(map_list_entry);
       }
       catch (...)
       {
@@ -341,7 +354,7 @@ int main(int argc, char **argv)
     }
     else
     {
-      ROS_ERROR("Invalid last_map_id");
+      ROS_ERROR("Invalid last_map_name");
     }
   }
 

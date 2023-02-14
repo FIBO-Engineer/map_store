@@ -1,5 +1,5 @@
 # Service used to rename a given map.
 
-string map_id
+string old_name
 string new_name
 ---
