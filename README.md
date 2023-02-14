@@ -2,6 +2,7 @@ map_store
 =========
 
 Storage manager for OccupancyGrid maps.  Supports naming the most recent map, getting a list of map names, and publishing a specific map.
+
 TODO: use warehouse_ros with warehouse_ros_mongo pluginlib instead of warehouse_ros_mongo directly.
 
 It's recommend to use docker to create a mongodb server. docker-compose.yml is provided.
@@ -12,10 +13,10 @@ But ChatGPT told that it supports up to version 3.6
 
 For reference (Tested but not working on Ubuntu 20.04, got error code 14)
 
-https://repo.mongodb.org/apt/ubuntu/dists/bionic/mongodb-org/3.6/multiverse/binary-amd64/mongodb-org-server_3.6.22_amd64.deb
-https://repo.mongodb.org/apt/ubuntu/dists/bionic/mongodb-org/3.6/multiverse/binary-amd64/mongodb-org-mongos_3.6.22_amd64.deb
-https://repo.mongodb.org/apt/ubuntu/dists/bionic/mongodb-org/3.6/multiverse/binary-amd64/mongodb-org-tools_3.6.22_amd64.deb
-https://repo.mongodb.org/apt/ubuntu/dists/bionic/mongodb-org/3.6/multiverse/binary-amd64/mongodb-org-shell_3.6.22_amd64.deb
+1) https://repo.mongodb.org/apt/ubuntu/dists/bionic/mongodb-org/3.6/multiverse/binary-amd64/mongodb-org-server_3.6.22_amd64.deb
+2) https://repo.mongodb.org/apt/ubuntu/dists/bionic/mongodb-org/3.6/multiverse/binary-amd64/mongodb-org-mongos_3.6.22_amd64.deb
+3) https://repo.mongodb.org/apt/ubuntu/dists/bionic/mongodb-org/3.6/multiverse/binary-amd64/mongodb-org-tools_3.6.22_amd64.deb
+4) https://repo.mongodb.org/apt/ubuntu/dists/bionic/mongodb-org/3.6/multiverse/binary-amd64/mongodb-org-shell_3.6.22_amd64.deb
 
 ---
 
