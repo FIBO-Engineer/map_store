@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-  <arg name="map_name" default="sample" />
+  <arg name="map_name" default="smc_nectec_walled" />
   <arg name="maps_location" default="$(find map_store)/maps/" />
 
   <arg name="map_path" value="$(eval arg('maps_location') + arg('map_name') + '.yaml')" />
@@ -9,13 +9,15 @@
   <param name="warehouse_port" value="27017" />
 
   <!-- Save to database -->
-  <node pkg="map_store" type="map_saver" name="map_saver" />
+  <node pkg="map_store" type="map_saver" name="map_saver" output="screen">
+    <remap from="/map_saver/map" to="/map" />
+  </node>
   <!-- For checking duplicates and delete -->
   <node pkg="map_store" type="map_manager" name="map_manager" output="screen" />
   <!-- For publishing local map file-->
   <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_path)" />
   <!-- State machine -->
   <node pkg="map_store" type="insert_map_from_file.py" name="add_map" args="'$(arg map_name)'"
-    required="true" output="screen" />
+    required="true" output="screen" launch-prefix="bash -c 'sleep 3; $0 $@' " />
 
 </launch>

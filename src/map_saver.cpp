@@ -79,6 +79,7 @@ void onMapReceived(const nav_msgs::OccupancyGrid::ConstPtr &map_msg)
   // map_collection->insert(*map_msg, metadata);
 
   // ROS_DEBUG("saved map");
+  ROS_INFO("[map_saver] Obtained map");
   latched_map_msg = map_msg;
 }
 
@@ -91,6 +92,11 @@ bool saveMap(map_store::SaveMap::Request &req,
   //   ROS_ERROR("Dynamic map getter service call failed");
   //   return false;
   // }
+  if (latched_map_msg == nullptr)
+  {
+    ROS_ERROR("[map_saver] No map was found while calling save map!");
+    return true;
+  }
 
   std::string uuid_string = uuidGenerate();
 
@@ -104,6 +110,7 @@ bool saveMap(map_store::SaveMap::Request &req,
   map_collection->insert(*latched_map_msg, metadata);
 
   // ROS_DEBUG("nameLastestMaps() service call done");
+  ROS_INFO("[map_saver] Map saved successfully");
   return true;
 }
 
