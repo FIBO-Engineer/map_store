@@ -1,5 +1,5 @@
 image: smc_nectec_amcl.pgm
-resolution: 0.050000
+resolution: 0.030000
 origin: [0.0, 0.0, 0.000000]
 negate: 0
 occupied_thresh: 0.65
