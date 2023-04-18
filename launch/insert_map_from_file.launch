@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-  <arg name="map_name" default="smc_nectec_walled" />
+  <arg name="map_name" default="sample_walled" />
   <arg name="maps_location" default="$(find map_store)/maps/" />
 
   <arg name="map_path" value="$(eval arg('maps_location') + arg('map_name') + '.yaml')" />

@@ -3,5 +3,7 @@
     <param name="warehouse_host" value="localhost" />
     <param name="warehouse_port" value="27017" />
 
-    <node pkg="map_store" type="map_manager" name="map_manager" output="screen" />
+    <node pkg="map_store" type="map_manager" name="map_manager" output="screen">
+        <param name="last_map_name" value="sample" />
+    </node>
 </launch>
