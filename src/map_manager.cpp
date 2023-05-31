@@ -144,9 +144,9 @@ bool publishMap(map_store::PublishMap::Request &request,
   last_map = request.name;
 
   std::string frame_id;
-  if (!nh_->param<std::string>("map_frame_id", frame_id, "/map"))
+  if (!nh_->param<std::string>("map_frame_id", frame_id, "map"))
   {
-    ROS_WARN("Parameter 'map_frame_id' not set. Using default frame ID: '/map'");
+    ROS_WARN("Parameter 'map_frame_id' not set. Using default frame ID: 'map'");
   }
 
   nh_->setParam("last_map_name", last_map);
