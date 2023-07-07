@@ -9,13 +9,13 @@
   <param name="warehouse_port" value="27017" />
 
   <!-- Save to database -->
-  <node pkg="map_store" type="map_saver" name="map_saver" output="screen">
+  <node pkg="map_store" type="map_saver" name="map_saver_insertion" output="screen">
     <remap from="/map_saver/map" to="/map" />
   </node>
   <!-- For checking duplicates and delete -->
-  <node pkg="map_store" type="map_manager" name="map_manager" output="screen" />
+  <node pkg="map_store" type="map_manager" name="map_manager_insertion" output="screen" />
   <!-- For publishing local map file-->
-  <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_path)" />
+  <node pkg="map_server" type="map_server" name="map_server_insertion" args="$(arg map_path)" />
   <!-- State machine -->
   <node pkg="map_store" type="insert_map_from_file.py" name="add_map" args="'$(arg map_name)'"
     required="true" output="screen" launch-prefix="bash -c 'sleep 3; $0 $@' " />
