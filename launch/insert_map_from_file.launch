@@ -10,7 +10,7 @@
 
   <!-- Save to database -->
   <node pkg="map_store" type="map_saver" name="map_saver_insertion" output="screen">
-    <remap from="/map_saver/map" to="/map" />
+    <remap from="/map_saver_insertion/map" to="/map" />
   </node>
   <!-- For checking duplicates and delete -->
   <node pkg="map_store" type="map_manager" name="map_manager_insertion" output="screen" />
