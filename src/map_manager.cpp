@@ -152,6 +152,7 @@ bool publishMap(map_store::PublishMap::Request &request,
   nh_->setParam("last_map_name", last_map);
   nav_msgs::OccupancyGridConstPtr map;
   map_store::MapListEntry map_list_entry;
+  response.success = false;
   if (lookupMap(request.name, map, map_list_entry))
   {
     try
@@ -160,15 +161,12 @@ bool publishMap(map_store::PublishMap::Request &request,
       prefixedMap.header.frame_id = frame_id;
       map_publisher.publish(prefixedMap);
       map_list_entry_publisher.publish(map_list_entry);
+      response.success = true;
     }
     catch (...)
     {
       ROS_ERROR("Error publishing map");
     }
-  }
-  else
-  {
-    return false;
   }
 
   return true;
